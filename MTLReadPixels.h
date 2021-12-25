@@ -85,7 +85,7 @@ class MTLReadPixels : public MTLReadPixelsBasse<T> {
                                         texDescriptor = MTLUtils::descriptor(MTLPixelFormatR32Float,this->width(),this->height());
                                     }
                                 }
-                                else if(this->_pixelbuffer->type()=="S"&&bpp==4) {
+                                else if(this->_pixelbuffer->type()=="S"&&bpp==2) {
                                     texDescriptor = MTLUtils::descriptor(MTLPixelFormatRG16Unorm,this->width(),this->height());
                                 }
                                 else if(this->_pixelbuffer->type()=="I"&&bpp==4) {

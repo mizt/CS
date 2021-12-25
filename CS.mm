@@ -46,21 +46,39 @@ class Test : public ComputeShaderBase<T> {
             return this->bytes();
         }
         
-        
-        Test(int w,int h,NSString *path) : ComputeShaderBase<T>(w,h) {
+        Test(int w,int h, int bpp, NSString *path) : ComputeShaderBase<T>(w,h) {
             
             this->_useArgumentEncoder = false;
-            this->_buffer.push_back(new MTLReadPixels<unsigned int>(w,h,4,@"shaders"));
+            this->_buffer.push_back(new MTLReadPixels<unsigned int>(w,h,bpp,@"shaders"));
     
-            MTLTextureDescriptor *descriptor = MTLUtils::descriptor(MTLPixelFormatRGBA8Unorm,w,h);
-            descriptor.usage = MTLTextureUsageShaderWrite|MTLTextureUsageShaderRead;
+            std::string type = @encode(T);
             
-            for(int k=0; k<TEXTURE_NUM; k++) {
-                this->_texture.push_back([this->_device newTextureWithDescriptor:descriptor]);
+            MTLTextureDescriptor *descriptor = nil;
+            
+            if(type=="I"&&bpp==4) {
+                descriptor = MTLUtils::descriptor(MTLPixelFormatRGBA8Unorm,w,h);
+            }
+            else if(type=="S"&&bpp==2) {
+                descriptor = MTLUtils::descriptor(MTLPixelFormatRG16Unorm,w,h);
+            }
+            else if(type=="f") {
+                if(bpp==1) descriptor = MTLUtils::descriptor(MTLPixelFormatR32Float,w,h);
+                else if(bpp==2) descriptor = MTLUtils::descriptor(MTLPixelFormatRG32Float,w,h);
+                else if(bpp==4) descriptor = MTLUtils::descriptor(MTLPixelFormatRGBA32Float,w,h);
             }
             
-            ComputeShaderBase<T>::setup(path);
-    
+            if(descriptor) {
+                descriptor.usage = MTLTextureUsageShaderWrite|MTLTextureUsageShaderRead;
+                
+                for(int k=0; k<TEXTURE_NUM; k++) {
+                    this->_texture.push_back([this->_device newTextureWithDescriptor:descriptor]);
+                }
+                
+                ComputeShaderBase<T>::setup(path);
+            }
+            else {
+                NSLog(@"%s",type.c_str());
+            }
         }
         
         ~Test() {
@@ -91,7 +109,7 @@ class App {
                 }
             }
             
-            this->test = new Test<unsigned int>(w,h,FileManager::concat(@"shaders",@"test.metallib"));
+            this->test = new Test<unsigned int>(w,h,4,FileManager::concat(@"shaders",@"test.metallib"));
             this->timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,0,0,dispatch_queue_create("ENTER_FRAME",0));
             dispatch_source_set_timer(this->timer,dispatch_time(0,0),(1.0/30)*1000000000,0);
             dispatch_source_set_event_handler(this->timer,^{
