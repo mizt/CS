@@ -130,7 +130,7 @@ class App {
                 }
             }
             
-            this->test = new Test<float>(w,h,1,@"test.metallib");
+            this->test = new Test<float>(w,h,1,@"snoise4.metallib");
             
             for(int k=0; k<totalFrames; k++) {
                 
