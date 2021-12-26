@@ -15,6 +15,8 @@ namespace stb_image {
 #import "../../MTLReadPixels.h"
 #import "../../ComputeShaderBase.h"
 
+
+
 template <typename T>
 class Test : public ComputeShaderBase<T> {
 
@@ -75,31 +77,25 @@ class Test : public ComputeShaderBase<T> {
             }
             
             if(descriptor) {
+                
                 descriptor.usage = MTLTextureUsageShaderWrite|MTLTextureUsageShaderRead;
                 
                 for(int k=0; k<TEXTURE_NUM; k++) {
                     this->_texture.push_back([this->_device newTextureWithDescriptor:descriptor]);
                 }
                 
-                this->_params.push_back(MTLUtils::newBuffer(this->_device,sizeof(float)*2));
-                float *resolution = (float *)[this->_params[0] contents];
-                resolution[0] = w;
-                resolution[1] = h;
-                
+                // resolution
+                this->_params.push_back(MTLUtils::setFloat2((MTLUtils::newBuffer(this->_device,sizeof(float)*2)),w,h));
+
                 // time
                 this->_params.push_back(MTLUtils::newBuffer(this->_device,sizeof(float)*1));
                 
                 // scale
-                this->_params.push_back(MTLUtils::newBuffer(this->_device,sizeof(float)*1));
-                float *scale = (float *)[this->_params[2] contents];
-                scale[0] = 1.1;
+                this->_params.push_back(MTLUtils::setFloat(MTLUtils::newBuffer(this->_device,sizeof(float)*1),4.0));
                 
                 // offset 
-                this->_params.push_back(MTLUtils::newBuffer(this->_device,sizeof(float)*2));
-                float *offset = (float *)[this->_params[3] contents];
-                offset[0] = 0.5;
-                offset[1] = 0.5;
-                
+                this->_params.push_back(MTLUtils::setFloat2((MTLUtils::newBuffer(this->_device,sizeof(float)*2)),0.5,0.5));
+                            
                 ComputeShaderBase<T>::setup(path);
             }
             else {
@@ -108,20 +104,20 @@ class Test : public ComputeShaderBase<T> {
         }
         
         ~Test() {
-        }        
+        }
 };
 
 class App {
     
     private:
     
-        const unsigned int w = 1280;
-        const unsigned int h =  720;
+        const unsigned int w = 1920;
+        const unsigned int h = 1080;
     
         unsigned int *dst = new unsigned int[w*h];
     
         Test<float> *test;
-    
+        
     public:
       
         App() {
@@ -137,16 +133,20 @@ class App {
             this->test = new Test<float>(w,h,1,@"test.metallib");
             
             for(int k=0; k<totalFrames; k++) {
+                
                 double then = CFAbsoluteTimeGetCurrent();
+                
                 float *tmp = this->test->exec(nullptr,k*(M_PI*2.0)/(double)totalFrames);
-                NSLog(@"%f",CFAbsoluteTimeGetCurrent()-then);
-
+                
                 for(int i=0; i<h; i++) {
                     for(int j=0; j<w; j++) {
                         int gris = tmp[i*w+j]*255.0;
                         this->dst[i*w+j] = 0xFF000000|gris<<16|gris<<8|gris;
                     }
                 }
+                
+                NSLog(@"%f",CFAbsoluteTimeGetCurrent()-then);
+
                 stb_image::stbi_write_png(UTF8StrWithFormat(@"%05d.png",k),w,h,4,this->dst,w*4);
             }
         }
